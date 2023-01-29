@@ -13,12 +13,7 @@ auto dice() {
 	return distr(engine);
 }
 
-auto dummypercent() {
-	static std::uniform_real_distribution<double> distr{0.5, 1.8};
-	static std::random_device device;
-	static std::mt19937 engine{device()};
-	return distr(engine);
-}
+
 
 class Timer {
 	std::chrono::high_resolution_clock::time_point startTime;
@@ -63,6 +58,24 @@ struct SoAPop {
 
 int main() {
 	using namespace std;
+
+	static std::uniform_real_distribution<double> distr{0.5, 1.8};
+	static std::random_device device;
+	static std::mt19937 engine{device()};
+	// return distr(engine);
+	size_t bignum = 2000;
+	std::vector<double> pregenerated(bignum);
+	for (size_t x = 0; x < bignum; x++) {
+		pregenerated.push_back(distr(engine));
+	}
+	
+	size_t x = 0;
+	auto dummypercent = [&]() {
+		if (x >= bignum) x = 0;
+		return pregenerated[x++];
+	};
+
+
 	cout << "Hello there!" << endl;
 	size_t numprov = 2700;
 	{
@@ -70,7 +83,7 @@ int main() {
 		std::vector<double> provoutputs(numprov);
 		std::generate(provsiz.begin(), provsiz.end(), dice<1,6>);
 
-		auto rgo = [](int psize) {
+		auto rgo = [&](int psize) {
 			double baseProduction = psize * (1.0 + dummypercent());
 			double throughput = dummypercent() * (1 + dummypercent() - dummypercent()/3) * (-dummypercent());
 			double outputEfficiency = 1 + dummypercent() + dummypercent() + dummypercent() + dummypercent();
@@ -97,7 +110,7 @@ int main() {
 			pop.luxuryNeedsSatisfaction = dummypercent();
 		}
 
-		auto popLife = [](Pop pop) {
+		auto popLife = [&](Pop pop) {
 			pop.popSize += dice<-10000,10000>();
 			pop.conciousness *= dummypercent();
 			pop.militancy *= dummypercent();
@@ -129,7 +142,7 @@ int main() {
 	}
 
 	auto sizeModify = [](int size) { return size + dice<-10000,10000>(); };
-	auto floatingModify = [](double val) { return val * dummypercent(); };
+	auto floatingModify = [&](double val) { return val * dummypercent(); };
 
 	Timer soaTest;
 	std::transform(pops.popSize.cbegin(), pops.popSize.cend(), pops.popSize.begin(), sizeModify);
